@@ -62,7 +62,7 @@ router.post('/register', validate(registerSchema), registerUser);
 
 /**
  * @openapi
- * /api/auth/login:
+ * /api/v1/auth/login:
  *   post:
  *     summary: Log in an existing user
  *     tags:
@@ -101,7 +101,7 @@ router.post('/login', validate(loginSchema), loginUser);
 
 /**
  * @openapi
- * /api/auth/google:
+ * /api/v1/auth/google:
  *   post:
  *     summary: Authenticate with Google (via Firebase ID Token)
  *     description: Verifies Firebase ID Token from Google Sign-In, retrieves user name, email & avatar picture, and issues JWT tokens.
@@ -141,7 +141,7 @@ router.post('/google', validate(googleAuthSchema), googleAuth);
 
 /**
  * @openapi
- * /api/auth/onboarding:
+ * /api/v1/auth/onboarding:
  *   post:
  *     summary: Complete or update user onboarding questionnaire
  *     description: Saves risk preference, investment goal, and Shariah screening strictness, and sets onboarding_completed to true.
@@ -186,7 +186,7 @@ router.post('/onboarding', protect, validate(onboardingSchema), completeOnboardi
 
 /**
  * @openapi
- * /api/auth/refresh-token:
+ * /api/v1/auth/refresh-token:
  *   post:
  *     summary: Refresh access token using refresh token
  *     tags:
@@ -224,7 +224,7 @@ router.post('/refresh-token', validate(refreshTokenSchema), refreshAccessToken);
 
 /**
  * @openapi
- * /api/auth/logout:
+ * /api/v1/auth/logout:
  *   post:
  *     summary: Log out user and revoke refresh token
  *     tags:
@@ -249,7 +249,7 @@ router.post('/logout', protect, logoutUser);
 
 /**
  * @openapi
- * /api/auth/me:
+ * /api/v1/auth/me:
  *   get:
  *     summary: Get current authenticated user profile
  *     tags:
