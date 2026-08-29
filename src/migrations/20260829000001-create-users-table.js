@@ -21,7 +21,16 @@ export default {
       },
       password_hash: {
         type: Sequelize.STRING(255),
+        allowNull: true, // Nullable for Google OAuth users
+      },
+      avatar_url: {
+        type: Sequelize.STRING(500),
+        allowNull: true,
+      },
+      auth_provider: {
+        type: Sequelize.ENUM('local', 'google'),
         allowNull: false,
+        defaultValue: 'local',
       },
       risk_preference: {
         type: Sequelize.ENUM('low', 'medium', 'high'),
@@ -43,6 +52,10 @@ export default {
         allowNull: false,
         defaultValue: false,
       },
+      refresh_token: {
+        type: Sequelize.TEXT,
+        allowNull: true,
+      },
       created_at: {
         type: Sequelize.DATE,
         allowNull: false,
@@ -60,4 +73,3 @@ export default {
     await queryInterface.dropTable('users');
   },
 };
-

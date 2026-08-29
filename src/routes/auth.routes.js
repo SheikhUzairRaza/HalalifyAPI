@@ -9,12 +9,20 @@ import {
   getCurrentUser,
 } from '../controllers/auth.controller.js';
 import { protect } from '../middlewares/auth.middleware.js';
+import { validate } from '../middlewares/validate.middleware.js';
+import {
+  registerSchema,
+  loginSchema,
+  googleAuthSchema,
+  onboardingSchema,
+  refreshTokenSchema,
+} from '../validations/auth.validation.js';
 
 const router = Router();
 
 /**
  * @openapi
- * /api/auth/register:
+ * /api/v1/auth/register:
  *   post:
  *     summary: Register a new user
  *     description: Registers a new user with name, email, and password. Account is created with onboarding_completed set to false.
@@ -50,7 +58,7 @@ const router = Router();
  *             schema:
  *               $ref: '#/components/schemas/ApiError'
  */
-router.post('/register', registerUser);
+router.post('/register', validate(registerSchema), registerUser);
 
 /**
  * @openapi
@@ -89,7 +97,7 @@ router.post('/register', registerUser);
  *             schema:
  *               $ref: '#/components/schemas/ApiError'
  */
-router.post('/login', loginUser);
+router.post('/login', validate(loginSchema), loginUser);
 
 /**
  * @openapi
@@ -129,7 +137,7 @@ router.post('/login', loginUser);
  *             schema:
  *               $ref: '#/components/schemas/ApiError'
  */
-router.post('/google', googleAuth);
+router.post('/google', validate(googleAuthSchema), googleAuth);
 
 /**
  * @openapi
@@ -174,7 +182,7 @@ router.post('/google', googleAuth);
  *             schema:
  *               $ref: '#/components/schemas/ApiError'
  */
-router.post('/onboarding', protect, completeOnboarding);
+router.post('/onboarding', protect, validate(onboardingSchema), completeOnboarding);
 
 /**
  * @openapi
@@ -212,7 +220,7 @@ router.post('/onboarding', protect, completeOnboarding);
  *             schema:
  *               $ref: '#/components/schemas/ApiError'
  */
-router.post('/refresh-token', refreshAccessToken);
+router.post('/refresh-token', validate(refreshTokenSchema), refreshAccessToken);
 
 /**
  * @openapi

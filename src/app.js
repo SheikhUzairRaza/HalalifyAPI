@@ -17,6 +17,14 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Serve interactive test UI clients
+app.get('/test', (req, res) => {
+  res.sendFile(path.join(__dirname, '../test.html'));
+});
+
+app.get('/test-google', (req, res) => {
+  res.sendFile(path.join(__dirname, '../google-test.html'));
+});
 
 // Swagger UI Documentation
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
