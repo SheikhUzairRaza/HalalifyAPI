@@ -53,7 +53,7 @@ const swaggerDefinition = {
         type: 'object',
         properties: {
           id: { type: 'string', format: 'uuid', example: 'd3b07384-d113-4a1e-8e54-9447e1741872' },
-          name: { type: 'string', example: 'John Doe' },
+          name: { type: 'string', minLength: 3, example: 'John Doe' },
           email: { type: 'string', format: 'email', example: 'john@example.com' },
           avatar_url: {
             type: 'string',
@@ -86,6 +86,19 @@ const swaggerDefinition = {
           updated_at: { type: 'string', format: 'date-time' },
         },
       },
+      Stock: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', format: 'uuid', example: 'f47ac10b-58cc-4372-a567-0e02b2c3d479' },
+          ticker: { type: 'string', example: 'AAPL' },
+          name: { type: 'string', example: 'Apple Inc. Common Stock' },
+          sector: { type: 'string', nullable: true, example: 'Technology' },
+          exchange: { type: 'string', nullable: true, example: 'NASDAQ' },
+          is_active: { type: 'boolean', example: true },
+          created_at: { type: 'string', format: 'date-time' },
+          updated_at: { type: 'string', format: 'date-time' },
+        },
+      },
       AuthResponseData: {
         type: 'object',
         properties: {
@@ -98,9 +111,9 @@ const swaggerDefinition = {
         type: 'object',
         required: ['name', 'email', 'password'],
         properties: {
-          name: { type: 'string', example: 'John Doe' },
+          name: { type: 'string', minLength: 3, example: 'John Doe' },
           email: { type: 'string', format: 'email', example: 'john@example.com' },
-          password: { type: 'string', minLength: 6, example: 'password123' },
+          password: { type: 'string', minLength: 8, example: 'password123' },
         },
       },
       LoginRequest: {
