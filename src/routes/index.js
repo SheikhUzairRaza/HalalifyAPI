@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { asyncHandler, ApiResponse } from '../utils/index.js';
 import authRoutes from './auth.routes.js';
+import stockRoutes from './stock.routes.js';
 
 const router = Router();
 
@@ -36,5 +37,7 @@ router.get(
 
 // Mount feature routes
 router.use('/auth', authRoutes);
+router.use('/stocks', stockRoutes);
 
 export default router;
+

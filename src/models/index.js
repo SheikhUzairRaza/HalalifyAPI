@@ -1,6 +1,7 @@
 import { sequelize } from '../config/db.js';
 import User from './user.model.js';
 import UserToken from './userToken.model.js';
+import Stock from './stock.model.js';
 
 // Setup associations for multi-device token management
 User.hasMany(UserToken, { foreignKey: 'user_id', as: 'tokens' });
@@ -10,7 +11,8 @@ const db = {
   sequelize,
   User,
   UserToken,
+  Stock,
 };
 
-export { sequelize, User, UserToken };
+export { sequelize, User, UserToken, Stock };
 export default db;
