@@ -13,10 +13,10 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 // Built-in Middlewares
+app.disable('x-powered-by');
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
 // Serve interactive test UI clients
 app.get('/test', (req, res) => {
   res.sendFile(path.join(__dirname, '../test.html'));
