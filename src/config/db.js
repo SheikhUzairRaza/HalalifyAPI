@@ -1,17 +1,12 @@
 import { Sequelize } from 'sequelize';
 import mysql from 'mysql2/promise';
+import { env } from './env.js';
 
-const dbName = process.env.DB_NAME || 'halalfy_db';
-const dbUser = process.env.DB_USER || 'root';
-const dbPassword = process.env.DB_PASSWORD || '';
-const dbHost = process.env.DB_HOST || '127.0.0.1';
-const dbPort = Number(process.env.DB_PORT) || 3306;
-
-export const sequelize = new Sequelize(dbName, dbUser, dbPassword, {
-  host: dbHost,
-  port: dbPort,
+export const sequelize = new Sequelize(env.db.name, env.db.user, env.db.password, {
+  host: env.db.host,
+  port: env.db.port,
   dialect: 'mysql',
-  logging: process.env.NODE_ENV === 'development' ? false : false,
+  logging: env.isDevelopment ? false : false,
   pool: {
     max: 5,
     min: 0,
@@ -24,17 +19,17 @@ export const connectDB = async () => {
   try {
     // Auto-create database if it doesn't already exist
     const connection = await mysql.createConnection({
-      host: dbHost,
-      port: dbPort,
-      user: dbUser,
-      password: dbPassword,
+      host: env.db.host,
+      port: env.db.port,
+      user: env.db.user,
+      password: env.db.password,
     });
-    await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\`;`);
+    await connection.query(`CREATE DATABASE IF NOT EXISTS \`${env.db.name}\`;`);
     await connection.end();
 
     // Authenticate Sequelize connection
     await sequelize.authenticate();
-    console.log(`MySQL Database '${dbName}' connected successfully with Sequelize.`);
+    console.log(`MySQL Database '${env.db.name}' connected successfully with Sequelize.`);
   } catch (error) {
     console.error('Unable to connect to MySQL database:', error.message);
     process.exit(1);

@@ -1,6 +1,5 @@
 import { ApiError } from '../utils/index.js';
-
-const FINNHUB_BASE_URL = 'https://finnhub.io/api/v1';
+import { env } from '../config/env.js';
 
 /**
  * Fetch company profile from Finnhub API and extract sector/industry
@@ -8,14 +7,14 @@ const FINNHUB_BASE_URL = 'https://finnhub.io/api/v1';
  * @returns {Promise<{ sector: string | null, raw: object | null }>}
  */
 export const getFinnhubSector = async (ticker) => {
-  const apiKey = process.env.FINNHUB_API_KEY;
+  const apiKey = env.finnhub.apiKey;
 
   if (!apiKey) {
     console.warn('⚠️ FINNHUB_API_KEY is not configured in environment variables.');
     return { sector: null, raw: null };
   }
 
-  const url = `${FINNHUB_BASE_URL}/stock/profile2?symbol=${encodeURIComponent(ticker)}`;
+  const url = `${env.finnhub.baseUrl}/stock/profile2?symbol=${encodeURIComponent(ticker)}`;
 
   try {
     const response = await fetch(url, {
@@ -49,4 +48,3 @@ export const getFinnhubSector = async (ticker) => {
 export default {
   getFinnhubSector,
 };
-
