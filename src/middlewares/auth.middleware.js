@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { User } from '../models/index.js';
 import { ApiError, asyncHandler } from '../utils/index.js';
+import { env } from '../config/env.js';
 
 /**
  * Authentication Middleware
@@ -20,10 +21,7 @@ export const protect = asyncHandler(async (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(
-      token,
-      process.env.ACCESS_TOKEN_SECRET || 'default_access_secret'
-    );
+    const decoded = jwt.verify(token, env.jwt.accessSecret);
 
     const user = await User.findByPk(decoded.id, {
       attributes: { exclude: ['password_hash', 'refresh_token'] },

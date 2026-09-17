@@ -1,5 +1,6 @@
 import { initializeApp, cert, getApps, getApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
+import { env } from './env.js';
 
 let app = null;
 
@@ -12,26 +13,17 @@ export const getFirebaseApp = () => {
   }
 
   try {
-    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-      app = initializeApp({
-        credential: cert(serviceAccount),
-      });
-    } else if (
-      process.env.FIREBASE_PROJECT_ID &&
-      process.env.FIREBASE_CLIENT_EMAIL &&
-      process.env.FIREBASE_PRIVATE_KEY
-    ) {
+    if (env.firebase.projectId && env.firebase.clientEmail && env.firebase.privateKey) {
       app = initializeApp({
         credential: cert({
-          projectId: process.env.FIREBASE_PROJECT_ID,
-          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-          privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+          projectId: env.firebase.projectId,
+          clientEmail: env.firebase.clientEmail,
+          privateKey: env.firebase.privateKey,
         }),
       });
     } else {
       app = initializeApp({
-        projectId: process.env.FIREBASE_PROJECT_ID || 'halalfy-app',
+        projectId: env.firebase.projectId || 'halalifyapi',
       });
     }
 
@@ -58,4 +50,3 @@ export const verifyFirebaseIdToken = async (idToken) => {
 };
 
 export default { getFirebaseApp, verifyFirebaseIdToken };
-

@@ -1,3 +1,5 @@
+import { env } from '../config/env.js';
+
 // Global Error Handling Middleware
 export const errorHandler = (err, req, res, next) => {
   const statusCode = err.statusCode || 500;
@@ -9,7 +11,7 @@ export const errorHandler = (err, req, res, next) => {
     statusCode,
     message,
     ...(errors.length > 0 && { errors }),
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+    ...(env.isDevelopment && { stack: err.stack }),
   });
 };
 

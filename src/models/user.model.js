@@ -2,6 +2,7 @@ import { DataTypes, Model } from 'sequelize';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { sequelize } from '../config/db.js';
+import { env } from '../config/env.js';
 
 export class User extends Model {
   /**
@@ -27,9 +28,9 @@ export class User extends Model {
         email: this.email,
         name: this.name,
       },
-      process.env.ACCESS_TOKEN_SECRET || 'default_access_secret',
+      env.jwt.accessSecret,
       {
-        expiresIn: process.env.ACCESS_TOKEN_EXPIRY || '15m',
+        expiresIn: env.jwt.accessExpiry,
       }
     );
   }
@@ -43,9 +44,9 @@ export class User extends Model {
       {
         id: this.id,
       },
-      process.env.REFRESH_TOKEN_SECRET || 'default_refresh_secret',
+      env.jwt.refreshSecret,
       {
-        expiresIn: process.env.REFRESH_TOKEN_EXPIRY || '7d',
+        expiresIn: env.jwt.refreshExpiry,
       }
     );
   }

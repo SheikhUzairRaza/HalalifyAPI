@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import { User, UserToken } from '../models/index.js';
 import { ApiError } from '../utils/index.js';
 import { verifyFirebaseIdToken } from '../config/firebase.js';
+import { env } from '../config/env.js';
 
 /**
  * Helper to generate Access and Refresh tokens and persist refresh token in user_tokens table
@@ -160,7 +161,7 @@ export const refreshTokenService = async (incomingRefreshToken) => {
   try {
     const decoded = jwt.verify(
       incomingRefreshToken,
-      process.env.REFRESH_TOKEN_SECRET || 'default_refresh_secret'
+      env.jwt.refreshSecret
     );
 
     const tokenRecord = await UserToken.findOne({

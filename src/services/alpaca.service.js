@@ -1,6 +1,5 @@
 import { ApiError } from '../utils/index.js';
-
-const ALPACA_BASE_URL = process.env.ALPACA_BASE_URL || 'https://paper-api.alpaca.markets';
+import { env } from '../config/env.js';
 
 /**
  * Fetch asset details from Alpaca Markets API
@@ -8,28 +7,17 @@ const ALPACA_BASE_URL = process.env.ALPACA_BASE_URL || 'https://paper-api.alpaca
  * @returns {Promise<{ name: string, exchange: string, symbol: string }>}
  */
 export const getAlpacaAsset = async (ticker) => {
-  const apiKey =
-    process.env.APCA_API_KEY_ID ||
-    process.env['APCA-API-KEY-ID'] ||
-    process.env.ALPACA_API_KEY_ID ||
-    process.env['ALPACA-API-KEY-ID'] ||
-    process.env.ALPACA_API_KEY;
-
-  const apiSecret =
-    process.env.APCA_API_SECRET_KEY ||
-    process.env['APCA-API-SECRET-KEY'] ||
-    process.env.ALPACA_API_SECRET_KEY ||
-    process.env['ALPACA-API-SECRET-KEY'] ||
-    process.env.ALPACA_SECRET_KEY;
+  const apiKey = env.alpaca.apiKeyId;
+  const apiSecret = env.alpaca.apiSecretKey;
 
   if (!apiKey || !apiSecret) {
     throw new ApiError(
       500,
-      'Alpaca API credentials missing. Please set APCA_API_KEY_ID (or APCA-API-KEY-ID) and APCA_API_SECRET_KEY (or APCA-API-SECRET-KEY) in environment variables.'
+      'Alpaca API credentials missing. Please set APCA_API_KEY_ID and APCA_API_SECRET_KEY in environment variables.'
     );
   }
 
-  const url = `${ALPACA_BASE_URL}/v2/assets/${encodeURIComponent(ticker)}`;
+  const url = `${env.alpaca.baseUrl}/v2/assets/${encodeURIComponent(ticker)}`;
 
   try {
     const response = await fetch(url, {
