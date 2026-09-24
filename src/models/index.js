@@ -5,7 +5,7 @@ import Stock from './stock.model.js';
 import MarketData from './marketData.model.js';
 import Feature from './feature.model.js';
 
-// Setup associations for multi-device token management
+// Setup associations
 User.hasMany(UserToken, { foreignKey: 'user_id', as: 'tokens' });
 UserToken.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 

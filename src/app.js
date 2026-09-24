@@ -33,8 +33,9 @@ app.get('/api/docs.json', (req, res) => {
   res.send(swaggerSpec);
 });
 
-// API Routes
+// API Routes (Mounted under /api and /api/v1 for compatibility)
 app.use('/api/v1', routes);
+app.use('/api', routes);
 
 // Global Error Handler
 app.use(errorHandler);

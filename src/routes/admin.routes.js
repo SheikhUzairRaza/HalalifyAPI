@@ -1,5 +1,8 @@
 import { Router } from 'express';
-import { refreshStocksMarketData } from '../controllers/admin.controller.js';
+import {
+  refreshStocksMarketData,
+  refreshStocksFeatures,
+} from '../controllers/admin.controller.js';
 
 const router = Router();
 
@@ -32,5 +35,37 @@ const router = Router();
  */
 router.post('/stocks/refresh', refreshStocksMarketData);
 
-export default router;
+/**
+ * @openapi
+ * /api/v1/admin/features/refresh:
+ *   post:
+ *     summary: Refresh fundamental financial metrics for all active stocks
+ *     description: Iterates through active stocks, calls Finnhub metric endpoint for each ticker, captures the metric property, and upserts them into the features table.
+ *     tags:
+ *       - Admin
+ *     responses:
+ *       200:
+ *         description: Fundamental features refreshed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         updated:
+ *                           type: integer
+ *                           example: 5
+ *                         totalStocks:
+ *                           type: integer
+ *                           example: 5
+ *                         data:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ */
+router.post('/features/refresh', refreshStocksFeatures);
 
+export default router;

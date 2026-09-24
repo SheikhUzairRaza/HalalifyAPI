@@ -9,9 +9,9 @@ const __dirname = path.dirname(__filename);
 
 const runAllMigrations = async () => {
   try {
-    console.log('🚀 Connecting to MySQL database...');
+    console.log('Connecting to MySQL database...');
     await sequelize.authenticate();
-    console.log('✅ Connected successfully.');
+    console.log('Connected successfully.');
 
     const queryInterface = sequelize.getQueryInterface();
 
@@ -52,7 +52,7 @@ const runAllMigrations = async () => {
         continue;
       }
 
-      console.log(`🔄 Executing migration: ${file}...`);
+      console.log(`Executing migration: ${file}...`);
       const filePath = path.join(__dirname, file);
       const fileUrl = pathToFileURL(filePath).href;
       const migrationModule = await import(fileUrl);
@@ -65,7 +65,7 @@ const runAllMigrations = async () => {
             replacements: { name: file },
             type: Sequelize.QueryTypes.INSERT,
           });
-          console.log(`✅ ${file} executed successfully.`);
+          console.log(`${file} executed successfully.`);
           migratedCount++;
         } catch (migErr) {
           if (
@@ -75,7 +75,7 @@ const runAllMigrations = async () => {
               migErr.message.includes('Duplicate key') ||
               (migErr.message.includes('Table') && migErr.message.includes('already exists')))
           ) {
-            console.log(`ℹ️ Schema already present for ${file}, marking as executed.`);
+            console.log(`Schema already present for ${file}, marking as executed.`);
             await sequelize.query('INSERT IGNORE INTO `SequelizeMeta` (`name`) VALUES (:name)', {
               replacements: { name: file },
               type: Sequelize.QueryTypes.INSERT,
@@ -88,14 +88,14 @@ const runAllMigrations = async () => {
     }
 
     if (migratedCount === 0) {
-      console.log('✨ No pending migrations. Database is up to date.');
+      console.log('No pending migrations. Database is up to date.');
     } else {
-      console.log(`🎉 Successfully executed ${migratedCount} migration(s).`);
+      console.log(`Successfully executed ${migratedCount} migration(s).`);
     }
 
     process.exit(0);
   } catch (error) {
-    console.error('💥 Migration runner error:', error.message);
+    console.error('Migration runner error:', error.message);
     process.exit(1);
   }
 };

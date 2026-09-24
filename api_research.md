@@ -1,4 +1,8 @@
+<<<<<<< Updated upstream
 # External API Research — Halalfy API Research Work
+=======
+# External API Research — Halalfy
+>>>>>>> Stashed changes
 
 This document covers all external API endpoints researched and validated for the Halalfy backend, their purpose, and how data flows into the database. Use this as the reference when implementing the `data_ingestion` module.
 
