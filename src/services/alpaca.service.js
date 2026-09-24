@@ -1,10 +1,11 @@
+import axios from 'axios';
 import { ApiError } from '../utils/index.js';
 import { env } from '../config/env.js';
 
 /**
- * Fetch asset details from Alpaca Markets API
+ * Fetch asset details from Alpaca Markets API using axios
  * @param {string} ticker - Stock symbol (e.g., 'AAPL')
- * @returns {Promise<{ name: string, exchange: string, symbol: string }>}
+ * @returns {Promise<{ name: string, exchange: string, symbol: string, status: string, tradable: boolean }>}
  */
 export const getAlpacaAsset = async (ticker) => {
   const apiKey = env.alpaca.apiKeyId;
@@ -20,8 +21,7 @@ export const getAlpacaAsset = async (ticker) => {
   const url = `${env.alpaca.baseUrl}/v2/assets/${encodeURIComponent(ticker)}`;
 
   try {
-    const response = await fetch(url, {
-      method: 'GET',
+    const response = await axios.get(url, {
       headers: {
         'APCA-API-KEY-ID': apiKey,
         'APCA-API-SECRET-KEY': apiSecret,
@@ -29,23 +29,7 @@ export const getAlpacaAsset = async (ticker) => {
       },
     });
 
-    if (response.status === 404) {
-      throw new ApiError(404, `Stock ticker '${ticker}' not found on Alpaca Markets`);
-    }
-
-    if (response.status === 401 || response.status === 403) {
-      throw new ApiError(401, 'Invalid Alpaca API credentials. Authentication failed.');
-    }
-
-    if (!response.ok) {
-      const errorBody = await response.text();
-      throw new ApiError(
-        response.status,
-        `Alpaca API error (${response.status}): ${errorBody || response.statusText}`
-      );
-    }
-
-    const data = await response.json();
+    const data = response.data;
 
     return {
       name: data.name,
@@ -55,8 +39,17 @@ export const getAlpacaAsset = async (ticker) => {
       tradable: data.tradable,
     };
   } catch (error) {
-    if (error instanceof ApiError) {
-      throw error;
+    if (error.response) {
+      if (error.response.status === 404) {
+        throw new ApiError(404, `Stock ticker '${ticker}' not found on Alpaca Markets`);
+      }
+      if (error.response.status === 401 || error.response.status === 403) {
+        throw new ApiError(401, 'Invalid Alpaca API credentials. Authentication failed.');
+      }
+      throw new ApiError(
+        error.response.status,
+        `Alpaca API error (${error.response.status}): ${JSON.stringify(error.response.data)}`
+      );
     }
     throw new ApiError(502, `Failed to communicate with Alpaca API: ${error.message}`);
   }
