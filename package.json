@@ -8,10 +8,7 @@
     "start": "node --env-file=.env src/server.js",
     "dev": "node --env-file=.env --watch src/server.js",
     "migrate": "node --env-file=.env src/migrations/runner.js",
-<<<<<<< Updated upstream
-=======
     "seed": "node --env-file=.env src/seeders/runner.js",
->>>>>>> Stashed changes
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
