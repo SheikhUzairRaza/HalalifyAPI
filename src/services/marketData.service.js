@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { Stock, MarketData } from '../models/index.js';
 import { env } from '../config/env.js';
 import { ApiError } from '../utils/index.js';
@@ -5,7 +6,7 @@ import { ApiError } from '../utils/index.js';
 const ALPACA_DATA_URL = 'https://data.alpaca.markets/v2';
 
 /**
- * Fetch latest market bars from Alpaca and upsert into market_data table
+ * Fetch latest market bars from Alpaca using Axios and upsert into market_data table
  * @returns {Promise<{ success: boolean, totalStocks: number, updatedCount: number, data: Array }>}
  */
 export const refreshMarketData = async () => {
@@ -14,9 +15,6 @@ export const refreshMarketData = async () => {
     where: { is_active: true },
     attributes: ['id', 'ticker'],
   });
-
-
-  console.log(activeStocks)
 
   if (!activeStocks || activeStocks.length === 0) {
     return {
@@ -37,7 +35,7 @@ export const refreshMarketData = async () => {
   // Make comma-separated string like "AAPL,MSFT,TSLA"
   const symbols = activeStocks.map((stock) => stock.ticker.toUpperCase()).join(',');
 
-  // Step 2: Call Alpaca Data endpoint
+  // Step 2: Call Alpaca Data endpoint using Axios
   const apiKey = env.alpaca.apiKeyId;
   const apiSecret = env.alpaca.apiSecretKey;
 
@@ -48,33 +46,30 @@ export const refreshMarketData = async () => {
     );
   }
 
-  const url = `${ALPACA_DATA_URL}/stocks/bars/latest?symbols=${encodeURIComponent(symbols)}`;
+  const url = `${ALPACA_DATA_URL}/stocks/bars/latest`;
 
-  let response;
+  let payload;
   try {
-    response = await fetch(url, {
-      method: 'GET',
+    const response = await axios.get(url, {
+      params: { symbols },
       headers: {
         'APCA-API-KEY-ID': apiKey,
         'APCA-API-SECRET-KEY': apiSecret,
         accept: 'application/json',
       },
     });
+    payload = response.data;
   } catch (err) {
+    if (err.response) {
+      throw new ApiError(
+        err.response.status,
+        `Alpaca Data API error (${err.response.status}): ${JSON.stringify(err.response.data)}`
+      );
+    }
     throw new ApiError(502, `Failed to communicate with Alpaca Data API: ${err.message}`);
   }
 
-  console.log('I am in file marketdata.service.js line 67',response)
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new ApiError(
-      response.status,
-      `Alpaca Data API error (${response.status}): ${errorText || response.statusText}`
-    );
-  }
-
-  const payload = await response.json();
-  const bars = payload.bars || {};
+  const bars = payload?.bars || {};
 
   // Step 3: Loop through JSON response for each symbol
   const recordsToUpsert = [];
