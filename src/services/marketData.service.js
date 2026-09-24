@@ -15,6 +15,9 @@ export const refreshMarketData = async () => {
     attributes: ['id', 'ticker'],
   });
 
+
+  console.log(activeStocks)
+
   if (!activeStocks || activeStocks.length === 0) {
     return {
       success: true,
@@ -61,6 +64,7 @@ export const refreshMarketData = async () => {
     throw new ApiError(502, `Failed to communicate with Alpaca Data API: ${err.message}`);
   }
 
+  console.log('I am in file marketdata.service.js line 67',response)
   if (!response.ok) {
     const errorText = await response.text();
     throw new ApiError(
