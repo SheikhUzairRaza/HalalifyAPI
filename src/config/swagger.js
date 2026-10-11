@@ -95,8 +95,67 @@ const swaggerDefinition = {
           sector: { type: 'string', nullable: true, example: 'Technology' },
           exchange: { type: 'string', nullable: true, example: 'NASDAQ' },
           is_active: { type: 'boolean', example: true },
+          latest_price: {
+            type: 'object',
+            nullable: true,
+            properties: {
+              close: { type: 'string', example: '335.8600' },
+              date: { type: 'string', format: 'date', example: '2026-10-09' },
+            },
+          },
           created_at: { type: 'string', format: 'date-time' },
           updated_at: { type: 'string', format: 'date-time' },
+        },
+      },
+      StockDetail: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', format: 'uuid', example: 'e0b15858-4e4a-4f6a-805e-0ab5e6743a15' },
+          ticker: { type: 'string', example: 'AAPL' },
+          name: { type: 'string', example: 'Apple Inc. Common Stock' },
+          sector: { type: 'string', nullable: true, example: 'Technology' },
+          exchange: { type: 'string', nullable: true, example: 'NASDAQ' },
+          is_active: { type: 'boolean', example: true },
+          latest_price: {
+            type: 'object',
+            nullable: true,
+            properties: {
+              close: { type: 'string', example: '335.8600' },
+              date: { type: 'string', format: 'date', example: '2026-10-09' },
+            },
+          },
+          fundamentals: {
+            type: 'object',
+            nullable: true,
+            properties: {
+              debt_ratio: { type: 'string', example: '0.7844' },
+              pe_ratio: { type: 'string', example: '38.1890' },
+              market_cap: { type: 'string', example: '4923711.50' },
+            },
+          },
+        },
+      },
+      MarketDataBar: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+          date: { type: 'string', format: 'date', example: '2026-09-24' },
+          open: { type: 'string', example: '336.0950' },
+          high: { type: 'string', example: '336.2400' },
+          low: { type: 'string', example: '335.8800' },
+          close: { type: 'string', example: '335.8800' },
+          volume: { type: 'integer', example: 27606 },
+        },
+      },
+      FeatureItem: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+          date: { type: 'string', format: 'date', example: '2026-09-24' },
+          debt_ratio: { type: 'string', example: '0.7844' },
+          pe_ratio: { type: 'string', example: '38.1890' },
+          market_cap: { type: 'string', example: '4923711.50' },
+          technical_indicators: { type: 'object', nullable: true },
         },
       },
       AuthResponseData: {

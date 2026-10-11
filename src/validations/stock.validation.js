@@ -36,6 +36,13 @@ export const stockTickerParamSchema = z.object({
 });
 
 /**
+ * Validation schema for route params containing a stock ID (:id)
+ */
+export const stockIdParamSchema = z.object({
+  id: z.string({ required_error: 'Stock ID is required' }).uuid('Invalid stock ID format (UUID expected)'),
+});
+
+/**
  * Validation schema for querying/listing stocks with pagination and filters
  */
 export const getStocksQuerySchema = z.object({
@@ -57,6 +64,32 @@ export const getStocksQuerySchema = z.object({
 });
 
 /**
+ * Validation schema for market data history query parameters (?from=&to=)
+ */
+export const getMarketDataQuerySchema = z.object({
+  from: z
+    .string()
+    .trim()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'from date must be in YYYY-MM-DD format')
+    .optional(),
+  to: z
+    .string()
+    .trim()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'to date must be in YYYY-MM-DD format')
+    .optional(),
+});
+
+/**
+ * Validation schema for features history query parameters (?full=true)
+ */
+export const getFeaturesQuerySchema = z.object({
+  full: z
+    .preprocess((val) => val === 'true' || val === true || val === '1' || val === 1, z.boolean())
+    .optional()
+    .default(false),
+});
+
+/**
  * Validation schema for updating stock details
  */
 export const updateStockSchema = z.object({
@@ -71,6 +104,9 @@ export default {
   createStockSchema,
   bulkCreateStockSchema,
   stockTickerParamSchema,
+  stockIdParamSchema,
   getStocksQuerySchema,
+  getMarketDataQuerySchema,
+  getFeaturesQuerySchema,
   updateStockSchema,
 };

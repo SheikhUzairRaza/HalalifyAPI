@@ -1,6 +1,32 @@
 import { ApiError } from '../utils/index.js';
 
 /**
+ * Safely assign parsed data to req property (handles Express 5 req.query getter)
+ * @param {object} req
+ * @param {'body' | 'query' | 'params'} key
+ * @param {any} data
+ */
+const assignReqData = (req, key, data) => {
+  try {
+    req[key] = data;
+  } catch {
+    if (req[key] && typeof req[key] === 'object' && data && typeof data === 'object') {
+      // Clear existing keys and copy sanitized data
+      for (const prop of Object.keys(req[key])) {
+        delete req[key][prop];
+      }
+      Object.assign(req[key], data);
+    } else {
+      Object.defineProperty(req, key, {
+        value: data,
+        writable: true,
+        configurable: true,
+      });
+    }
+  }
+};
+
+/**
  * Middleware factory to validate request data using Zod schema(s)
  * Supports:
  *  - validate(schema) -> validates req.body (default)
@@ -23,7 +49,7 @@ export const validate = (schema, target = 'body') => (req, res, next) => {
             .join(', ');
           throw new ApiError(400, `Validation Error: ${errorMessages}`);
         }
-        req[key] = result.data;
+        assignReqData(req, key, result.data);
       }
     }
     return next();
@@ -41,7 +67,7 @@ export const validate = (schema, target = 'body') => (req, res, next) => {
       throw new ApiError(400, `Validation Error: ${errorMessages}`);
     }
 
-    req[target] = result.data;
+    assignReqData(req, target, result.data);
     return next();
   }
 
