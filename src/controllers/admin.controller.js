@@ -3,12 +3,13 @@ import { refreshMarketData } from '../services/marketData.service.js';
 import { refreshFundamentals } from '../services/fundamentals.service.js';
 
 /**
- * @desc    Manually trigger market data refresh for all active stocks
+ * @desc    Manually trigger market data refresh for active stocks
  * @route   POST /api/v1/admin/stocks/refresh
  * @access  Admin / Public
  */
 export const refreshStocksMarketData = asyncHandler(async (req, res) => {
-  const result = await refreshMarketData();
+  const symbols = req.body?.symbols;
+  const result = await refreshMarketData(symbols);
 
   return new ApiResponse(
     200,
@@ -21,12 +22,13 @@ export const refreshStocksMarketData = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Manually trigger fundamental metrics refresh for all active stocks
+ * @desc    Manually trigger fundamental metrics refresh for active stocks
  * @route   POST /api/v1/admin/features/refresh
  * @access  Admin / Public
  */
 export const refreshStocksFeatures = asyncHandler(async (req, res) => {
-  const result = await refreshFundamentals();
+  const symbols = req.body?.symbols;
+  const result = await refreshFundamentals(symbols);
 
   return new ApiResponse(
     200,

@@ -5,10 +5,15 @@ import { getFinnhubMetrics } from './finnhub.service.js';
  * Fetch fundamental metrics for all active stocks from Finnhub and capture metric property
  * @returns {Promise<{ success: boolean, totalStocks: number, updatedCount: number, data: Array }>}
  */
-export const refreshFundamentals = async () => {
-  // Step 1: Query all active stocks from stocks table
+export const refreshFundamentals = async (filterSymbols = null) => {
+  const whereClause = { is_active: true };
+  if (filterSymbols && Array.isArray(filterSymbols) && filterSymbols.length > 0) {
+    whereClause.ticker = filterSymbols.map((s) => s.toUpperCase());
+  }
+
+  // Step 1: Query active stocks from stocks table
   const activeStocks = await Stock.findAll({
-    where: { is_active: true },
+    where: whereClause,
     attributes: ['id', 'ticker'],
   });
 
@@ -45,6 +50,9 @@ export const refreshFundamentals = async () => {
         metric, // Captured metric property from Finnhub response
       });
     }
+
+    // Rate-limit safety: 1 second delay between ticker calls
+    await new Promise((resolve) => setTimeout(resolve, 1000));
   }
 
   // Step 3: Upsert into features table on (stock_id, date)

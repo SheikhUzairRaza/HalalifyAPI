@@ -9,10 +9,15 @@ const ALPACA_DATA_URL = 'https://data.alpaca.markets/v2';
  * Fetch latest market bars from Alpaca using Axios and upsert into market_data table
  * @returns {Promise<{ success: boolean, totalStocks: number, updatedCount: number, data: Array }>}
  */
-export const refreshMarketData = async () => {
-  // Step 1: Fetch all active stocks from stocks table
+export const refreshMarketData = async (filterSymbols = null) => {
+  const whereClause = { is_active: true };
+  if (filterSymbols && Array.isArray(filterSymbols) && filterSymbols.length > 0) {
+    whereClause.ticker = filterSymbols.map((s) => s.toUpperCase());
+  }
+
+  // Step 1: Fetch active stocks from stocks table
   const activeStocks = await Stock.findAll({
-    where: { is_active: true },
+    where: whereClause,
     attributes: ['id', 'ticker'],
   });
 
