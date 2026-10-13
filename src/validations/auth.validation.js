@@ -114,6 +114,35 @@ export const resetPasswordSchema = z.object({
     .max(128, 'New password cannot exceed 128 characters'),
 });
 
+/**
+ * Validation schema for Verify Email (Signup OTP)
+ */
+export const verifyEmailSchema = z.object({
+  email: z
+    .string({ required_error: 'Email is required' })
+    .trim()
+    .toLowerCase()
+    .email('Invalid email address format')
+    .max(255, 'Email cannot exceed 255 characters'),
+  otp: z
+    .string({ required_error: 'OTP code is required' })
+    .trim()
+    .length(6, 'OTP must be exactly 6 digits')
+    .regex(/^\d{6}$/, 'OTP must contain only numbers'),
+});
+
+/**
+ * Validation schema for Resend Verification OTP
+ */
+export const resendVerificationSchema = z.object({
+  email: z
+    .string({ required_error: 'Email is required' })
+    .trim()
+    .toLowerCase()
+    .email('Invalid email address format')
+    .max(255, 'Email cannot exceed 255 characters'),
+});
+
 export default {
   registerSchema,
   loginSchema,
@@ -122,4 +151,6 @@ export default {
   refreshTokenSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
+  verifyEmailSchema,
+  resendVerificationSchema,
 };

@@ -9,6 +9,8 @@ import {
   getCurrentUser,
   forgotPassword,
   resetPassword,
+  verifyEmail,
+  resendVerificationOtp,
 } from '../controllers/auth.controller.js';
 import { protect } from '../middlewares/auth.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
@@ -20,6 +22,8 @@ import {
   refreshTokenSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
+  verifyEmailSchema,
+  resendVerificationSchema,
 } from '../validations/auth.validation.js';
 
 const router = Router();
@@ -285,10 +289,86 @@ router.get('/me', protect, getCurrentUser);
 
 /**
  * @openapi
+ * /api/v1/auth/verify-email:
+ *   post:
+ *     summary: Verify email address with 6-digit OTP code
+ *     description: Verifies 6-digit OTP code sent upon registration. Upon verification, issues access and refresh JWT tokens.
+ *     tags:
+ *       - Authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/VerifyEmailRequest'
+ *     responses:
+ *       200:
+ *         description: Email verified successfully and tokens issued
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/AuthResponseData'
+ *       400:
+ *         description: Invalid or expired OTP code or validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
+ */
+router.post('/verify-email', validate(verifyEmailSchema), verifyEmail);
+
+/**
+ * @openapi
+ * /api/v1/auth/resend-verification:
+ *   post:
+ *     summary: Resend signup email verification OTP code
+ *     description: Generates and emails a new 6-digit verification OTP code valid for 15 minutes.
+ *     tags:
+ *       - Authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ResendVerificationRequest'
+ *     responses:
+ *       200:
+ *         description: Verification code resent successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ *       400:
+ *         description: Email is already verified or validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
+ */
+router.post('/resend-verification', validate(resendVerificationSchema), resendVerificationOtp);
+
+/**
+ * @openapi
  * /api/v1/auth/forgot-password:
  *   post:
  *     summary: Request password reset OTP code
- *     description: Generates a 6-digit OTP code valid for 15 minutes and logs/returns it for password recovery.
+ *     description: Generates a 6-digit OTP code valid for 15 minutes and emails it for password recovery. Supports all users in database.
  *     tags:
  *       - Authentication
  *     requestBody:
@@ -299,13 +379,13 @@ router.get('/me', protect, getCurrentUser);
  *             $ref: '#/components/schemas/ForgotPasswordRequest'
  *     responses:
  *       200:
- *         description: OTP generated successfully
+ *         description: Password reset code has been sent to your email
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ApiResponse'
  *       400:
- *         description: Google accounts cannot use password reset or validation failed
+ *         description: Validation failed
  *         content:
  *           application/json:
  *             schema:

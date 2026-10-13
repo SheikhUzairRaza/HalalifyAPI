@@ -8,6 +8,8 @@ import {
   getUserProfileService,
   forgotPasswordService,
   resetPasswordService,
+  verifyEmailService,
+  resendVerificationOtpService,
 } from '../services/index.js';
 import { ApiResponse, asyncHandler } from '../utils/index.js';
 
@@ -112,6 +114,26 @@ export const resetPassword = asyncHandler(async (req, res) => {
   return new ApiResponse(200, result, result.message).send(res);
 });
 
+/**
+ * @desc    Verify Email with OTP
+ * @route   POST /api/v1/auth/verify-email
+ * @access  Public
+ */
+export const verifyEmail = asyncHandler(async (req, res) => {
+  const result = await verifyEmailService(req.body);
+  return new ApiResponse(200, result, result.message).send(res);
+});
+
+/**
+ * @desc    Resend Email Verification OTP
+ * @route   POST /api/v1/auth/resend-verification
+ * @access  Public
+ */
+export const resendVerificationOtp = asyncHandler(async (req, res) => {
+  const result = await resendVerificationOtpService(req.body.email);
+  return new ApiResponse(200, result, result.message).send(res);
+});
+
 export default {
   registerUser,
   loginUser,
@@ -122,4 +144,7 @@ export default {
   getCurrentUser,
   forgotPassword,
   resetPassword,
+  verifyEmail,
+  resendVerificationOtp,
 };
+

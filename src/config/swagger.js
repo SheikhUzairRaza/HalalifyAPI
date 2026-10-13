@@ -41,6 +41,7 @@ const swaggerDefinition = {
         properties: {
           success: { type: 'boolean', example: false },
           statusCode: { type: 'integer', example: 400 },
+          code: { type: 'string', nullable: true, example: 'EMAIL_NOT_VERIFIED' },
           message: { type: 'string', example: 'Error message description' },
           errors: {
             type: 'array',
@@ -82,6 +83,7 @@ const swaggerDefinition = {
             example: 'standard',
           },
           onboarding_completed: { type: 'boolean', example: false },
+          is_email_verified: { type: 'boolean', example: false },
           created_at: { type: 'string', format: 'date-time' },
           updated_at: { type: 'string', format: 'date-time' },
         },
@@ -256,6 +258,35 @@ const swaggerDefinition = {
             type: 'string',
             minLength: 8,
             example: 'newSecurePassword123',
+          },
+        },
+      },
+      VerifyEmailRequest: {
+        type: 'object',
+        required: ['email', 'otp'],
+        properties: {
+          email: {
+            type: 'string',
+            format: 'email',
+            example: 'john@example.com',
+          },
+          otp: {
+            type: 'string',
+            minLength: 6,
+            maxLength: 6,
+            example: '123456',
+            description: '6-digit verification OTP received via email',
+          },
+        },
+      },
+      ResendVerificationRequest: {
+        type: 'object',
+        required: ['email'],
+        properties: {
+          email: {
+            type: 'string',
+            format: 'email',
+            example: 'john@example.com',
           },
         },
       },
