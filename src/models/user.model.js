@@ -58,6 +58,8 @@ export class User extends Model {
     const values = { ...this.get() };
     delete values.password_hash;
     delete values.refresh_token;
+    delete values.reset_password_otp;
+    delete values.reset_password_otp_expires_at;
     return values;
   }
 }
@@ -124,6 +126,14 @@ User.init(
     },
     refresh_token: {
       type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    reset_password_otp: {
+      type: DataTypes.STRING(6),
+      allowNull: true,
+    },
+    reset_password_otp_expires_at: {
+      type: DataTypes.DATE,
       allowNull: true,
     },
   },

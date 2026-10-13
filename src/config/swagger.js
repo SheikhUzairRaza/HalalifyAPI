@@ -225,6 +225,40 @@ const swaggerDefinition = {
           },
         },
       },
+      ForgotPasswordRequest: {
+        type: 'object',
+        required: ['email'],
+        properties: {
+          email: {
+            type: 'string',
+            format: 'email',
+            example: 'john@example.com',
+          },
+        },
+      },
+      ResetPasswordRequest: {
+        type: 'object',
+        required: ['email', 'otp', 'newPassword'],
+        properties: {
+          email: {
+            type: 'string',
+            format: 'email',
+            example: 'john@example.com',
+          },
+          otp: {
+            type: 'string',
+            minLength: 6,
+            maxLength: 6,
+            example: '123456',
+            description: '6-digit OTP code received',
+          },
+          newPassword: {
+            type: 'string',
+            minLength: 8,
+            example: 'newSecurePassword123',
+          },
+        },
+      },
     },
   },
 };

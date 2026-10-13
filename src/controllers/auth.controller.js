@@ -6,6 +6,8 @@ import {
   refreshTokenService,
   logoutUserService,
   getUserProfileService,
+  forgotPasswordService,
+  resetPasswordService,
 } from '../services/index.js';
 import { ApiResponse, asyncHandler } from '../utils/index.js';
 
@@ -89,3 +91,35 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
     'Current user profile fetched successfully'
   ).send(res);
 });
+
+/**
+ * @desc    Request Password Reset OTP
+ * @route   POST /api/v1/auth/forgot-password
+ * @access  Public
+ */
+export const forgotPassword = asyncHandler(async (req, res) => {
+  const result = await forgotPasswordService(req.body.email);
+  return new ApiResponse(200, result, result.message).send(res);
+});
+
+/**
+ * @desc    Reset Password with OTP
+ * @route   POST /api/v1/auth/reset-password
+ * @access  Public
+ */
+export const resetPassword = asyncHandler(async (req, res) => {
+  const result = await resetPasswordService(req.body);
+  return new ApiResponse(200, result, result.message).send(res);
+});
+
+export default {
+  registerUser,
+  loginUser,
+  googleAuth,
+  completeOnboarding,
+  refreshAccessToken,
+  logoutUser,
+  getCurrentUser,
+  forgotPassword,
+  resetPassword,
+};

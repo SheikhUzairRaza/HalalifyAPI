@@ -229,3 +229,109 @@ export const getUserProfileService = async (userId) => {
   }
   return user.toJSON();
 };
+
+/**
+ * Request Password Reset OTP
+ * Generates a 6-digit numeric OTP valid for 15 minutes and logs/returns it
+ * @param {string} email
+ * @returns {Promise<{ message: string, otp?: string }>}
+ */
+export const forgotPasswordService = async (email) => {
+  const normalizedEmail = email.toLowerCase().trim();
+  const user = await User.findOne({ where: { email: normalizedEmail } });
+
+  if (!user) {
+    throw new ApiError(404, 'User with this email does not exist');
+  }
+
+  if (user.auth_provider === 'google' && !user.password_hash) {
+    throw new ApiError(
+      400,
+      'This account is registered via Google Sign-In. Password reset is not available.'
+    );
+  }
+
+  // Generate 6-digit cryptographically random OTP (100000 - 999999)
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes validity
+
+  user.reset_password_otp = otp;
+  user.reset_password_otp_expires_at = expiresAt;
+  await user.save();
+
+  console.log(`[PASSWORD RESET OTP] For ${normalizedEmail}: ${otp} (valid for 15m)`);
+
+  const responseData = {
+    message: 'Password reset OTP has been sent to your email address.',
+  };
+
+  // Provide OTP in response payload in non-production environments for developer convenience & testing
+  if (!env.isProduction) {
+    responseData.otp = otp;
+    responseData.expiresIn = '15 minutes';
+  }
+
+  return responseData;
+};
+
+/**
+ * Verify OTP and reset password
+ * @param {object} params
+ * @param {string} params.email
+ * @param {string} params.otp
+ * @param {string} params.newPassword
+ * @returns {Promise<{ message: string }>}
+ */
+export const resetPasswordService = async ({ email, otp, newPassword }) => {
+  const normalizedEmail = email.toLowerCase().trim();
+  const user = await User.findOne({ where: { email: normalizedEmail } });
+
+  if (!user) {
+    throw new ApiError(404, 'User with this email does not exist');
+  }
+
+  if (!user.reset_password_otp || !user.reset_password_otp_expires_at) {
+    throw new ApiError(400, 'No active password reset request found. Please request a new OTP.');
+  }
+
+  if (new Date() > new Date(user.reset_password_otp_expires_at)) {
+    user.reset_password_otp = null;
+    user.reset_password_otp_expires_at = null;
+    await user.save();
+    throw new ApiError(400, 'OTP code has expired. Please request a new one.');
+  }
+
+  if (user.reset_password_otp !== otp.trim()) {
+    throw new ApiError(400, 'Invalid OTP code provided.');
+  }
+
+  // Set new password (beforeSave hook in User model will hash it)
+  user.password_hash = newPassword;
+  user.reset_password_otp = null;
+  user.reset_password_otp_expires_at = null;
+  await user.save();
+
+  // Invalidate all existing login sessions across devices for security
+  await UserToken.update(
+    { is_revoked: true },
+    { where: { user_id: user.id } }
+  );
+
+  return {
+    message: 'Password has been reset successfully. Please log in with your new password.',
+  };
+};
+
+export default {
+  generateAccessAndRefreshTokens,
+  registerUserService,
+  loginUserService,
+  googleAuthService,
+  completeOnboardingService,
+  refreshTokenService,
+  logoutUserService,
+  getUserProfileService,
+  forgotPasswordService,
+  resetPasswordService,
+};
+

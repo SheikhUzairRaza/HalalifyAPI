@@ -7,6 +7,8 @@ import {
   refreshAccessToken,
   logoutUser,
   getCurrentUser,
+  forgotPassword,
+  resetPassword,
 } from '../controllers/auth.controller.js';
 import { protect } from '../middlewares/auth.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
@@ -16,6 +18,8 @@ import {
   googleAuthSchema,
   onboardingSchema,
   refreshTokenSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
 } from '../validations/auth.validation.js';
 
 const router = Router();
@@ -278,5 +282,77 @@ router.post('/logout', protect, logoutUser);
  *               $ref: '#/components/schemas/ApiError'
  */
 router.get('/me', protect, getCurrentUser);
+
+/**
+ * @openapi
+ * /api/v1/auth/forgot-password:
+ *   post:
+ *     summary: Request password reset OTP code
+ *     description: Generates a 6-digit OTP code valid for 15 minutes and logs/returns it for password recovery.
+ *     tags:
+ *       - Authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ForgotPasswordRequest'
+ *     responses:
+ *       200:
+ *         description: OTP generated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ *       400:
+ *         description: Google accounts cannot use password reset or validation failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
+ *       404:
+ *         description: User with email not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
+ */
+router.post('/forgot-password', validate(forgotPasswordSchema), forgotPassword);
+
+/**
+ * @openapi
+ * /api/v1/auth/reset-password:
+ *   post:
+ *     summary: Reset password with OTP code
+ *     description: Verifies 6-digit OTP code and updates the user's password, invalidating old sessions.
+ *     tags:
+ *       - Authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ResetPasswordRequest'
+ *     responses:
+ *       200:
+ *         description: Password reset successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ *       400:
+ *         description: Invalid or expired OTP code or validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
+ */
+router.post('/reset-password', validate(resetPasswordSchema), resetPassword);
 
 export default router;

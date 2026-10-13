@@ -81,10 +81,45 @@ export const refreshTokenSchema = z.object({
     .max(2048, 'Refresh token is too long'),
 });
 
+/**
+ * Validation schema for Forgot Password (Request OTP)
+ */
+export const forgotPasswordSchema = z.object({
+  email: z
+    .string({ required_error: 'Email is required' })
+    .trim()
+    .toLowerCase()
+    .email('Invalid email address format')
+    .max(255, 'Email cannot exceed 255 characters'),
+});
+
+/**
+ * Validation schema for Reset Password (Verify OTP & Set New Password)
+ */
+export const resetPasswordSchema = z.object({
+  email: z
+    .string({ required_error: 'Email is required' })
+    .trim()
+    .toLowerCase()
+    .email('Invalid email address format')
+    .max(255, 'Email cannot exceed 255 characters'),
+  otp: z
+    .string({ required_error: 'OTP code is required' })
+    .trim()
+    .length(6, 'OTP must be exactly 6 digits')
+    .regex(/^\d{6}$/, 'OTP must contain only numbers'),
+  newPassword: z
+    .string({ required_error: 'New password is required' })
+    .min(8, 'New password must be at least 8 characters long')
+    .max(128, 'New password cannot exceed 128 characters'),
+});
+
 export default {
   registerSchema,
   loginSchema,
   googleAuthSchema,
   onboardingSchema,
   refreshTokenSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
 };
