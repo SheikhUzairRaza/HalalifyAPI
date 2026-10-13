@@ -33,6 +33,11 @@ const envSchema = z.object({
   ALPACA_API_KEY_ID: z.string().optional(),
   ALPACA_API_SECRET_KEY: z.string().optional(),
   ALPACA_BASE_URL: z.string().default('https://paper-api.alpaca.markets'),
+  SMTP_HOST: z.string().default('smtp.gmail.com'),
+  SMTP_PORT: z.coerce.number().default(587),
+  SMTP_USER: z.string().default(''),
+  SMTP_PASS: z.string().default(''),
+  SMTP_FROM: z.string().default('Halalfy Support <no-reply@halalfy.com>'),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -95,6 +100,15 @@ export const env = {
       process.env.ALPACA_API_SECRET_KEY ||
       '',
     baseUrl: safeEnv.ALPACA_BASE_URL || process.env.ALPACA_BASE_URL || 'https://paper-api.alpaca.markets',
+  },
+
+  // SMTP Mail Configuration
+  mail: {
+    host: safeEnv.SMTP_HOST || process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: Number(safeEnv.SMTP_PORT) || Number(process.env.SMTP_PORT) || 587,
+    user: safeEnv.SMTP_USER || process.env.SMTP_USER || '',
+    pass: safeEnv.SMTP_PASS || process.env.SMTP_PASS || '',
+    from: safeEnv.SMTP_FROM || process.env.SMTP_FROM || 'Halalfy Support <no-reply@halalfy.com>',
   },
 };
 
