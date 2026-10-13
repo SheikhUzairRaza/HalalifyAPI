@@ -3,6 +3,7 @@ import { User, UserToken } from '../models/index.js';
 import { ApiError } from '../utils/index.js';
 import { verifyFirebaseIdToken } from '../config/firebase.js';
 import { env } from '../config/env.js';
+import { sendPasswordResetEmail, sendVerificationEmail } from './mail.service.js';
 
 /**
  * Helper to generate Access and Refresh tokens and persist refresh token in user_tokens table
@@ -34,27 +35,39 @@ export const generateAccessAndRefreshTokens = async (userId) => {
 
 /**
  * Register a new user
+ * Generates a 6-digit verification OTP and dispatches verification email
  */
 export const registerUserService = async ({ name, email, password }) => {
-  const existingUser = await User.findOne({ where: { email: email.toLowerCase().trim() } });
+  const normalizedEmail = email.toLowerCase().trim();
+  const existingUser = await User.findOne({ where: { email: normalizedEmail } });
   if (existingUser) {
     throw new ApiError(409, 'User with this email already exists');
   }
 
+  // Generate 6-digit numeric OTP valid for 15 minutes
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
   const user = await User.create({
     name: name.trim(),
-    email: email.toLowerCase().trim(),
+    email: normalizedEmail,
     password_hash: password,
     auth_provider: 'local',
     onboarding_completed: false,
+    is_email_verified: false,
+    verification_otp: otp,
+    verification_otp_expires_at: expiresAt,
   });
 
-  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user.id);
+  console.log(`[SIGNUP VERIFICATION OTP] For ${normalizedEmail}: ${otp} (valid for 15m)`);
+
+  // Dispatch verification email via Nodemailer
+  await sendVerificationEmail(normalizedEmail, otp, user.name);
 
   return {
     user: user.toJSON(),
-    accessToken,
-    refreshToken,
+    message:
+      'Registration successful. A 6-digit verification code has been sent to your email. Please verify your email to activate your account.',
   };
 };
 
@@ -77,6 +90,15 @@ export const loginUserService = async ({ email, password }) => {
   const isPasswordValid = await user.comparePassword(password);
   if (!isPasswordValid) {
     throw new ApiError(401, 'Invalid email or password');
+  }
+
+  if (!user.is_email_verified) {
+    throw new ApiError(
+      403,
+      'Please verify your email address before logging in. If your verification code has expired, please request a new one.',
+      [],
+      'EMAIL_NOT_VERIFIED'
+    );
   }
 
   const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user.id);
@@ -115,10 +137,19 @@ export const googleAuthService = async (idToken) => {
       auth_provider: 'google',
       password_hash: null,
       onboarding_completed: false,
+      is_email_verified: true,
     });
   } else {
+    let shouldSave = false;
+    if (!user.is_email_verified) {
+      user.is_email_verified = true;
+      shouldSave = true;
+    }
     if (picture && !user.avatar_url) {
       user.avatar_url = picture;
+      shouldSave = true;
+    }
+    if (shouldSave) {
       await user.save();
     }
   }
@@ -232,9 +263,10 @@ export const getUserProfileService = async (userId) => {
 
 /**
  * Request Password Reset OTP
- * Generates a 6-digit numeric OTP valid for 15 minutes and logs/returns it
+ * Generates a 6-digit numeric OTP valid for 15 minutes and dispatches email
+ * Does NOT expose OTP in response body (supports both local and Google accounts in DB)
  * @param {string} email
- * @returns {Promise<{ message: string, otp?: string }>}
+ * @returns {Promise<{ message: string }>}
  */
 export const forgotPasswordService = async (email) => {
   const normalizedEmail = email.toLowerCase().trim();
@@ -242,13 +274,6 @@ export const forgotPasswordService = async (email) => {
 
   if (!user) {
     throw new ApiError(404, 'User with this email does not exist');
-  }
-
-  if (user.auth_provider === 'google' && !user.password_hash) {
-    throw new ApiError(
-      400,
-      'This account is registered via Google Sign-In. Password reset is not available.'
-    );
   }
 
   // Generate 6-digit cryptographically random OTP (100000 - 999999)
@@ -261,17 +286,12 @@ export const forgotPasswordService = async (email) => {
 
   console.log(`[PASSWORD RESET OTP] For ${normalizedEmail}: ${otp} (valid for 15m)`);
 
-  const responseData = {
-    message: 'Password reset OTP has been sent to your email address.',
+  // Send real email via Nodemailer
+  await sendPasswordResetEmail(normalizedEmail, otp, user.name || 'User');
+
+  return {
+    message: 'Password reset code has been sent to your email.',
   };
-
-  // Provide OTP in response payload in non-production environments for developer convenience & testing
-  if (!env.isProduction) {
-    responseData.otp = otp;
-    responseData.expiresIn = '15 minutes';
-  }
-
-  return responseData;
 };
 
 /**
@@ -307,6 +327,7 @@ export const resetPasswordService = async ({ email, otp, newPassword }) => {
 
   // Set new password (beforeSave hook in User model will hash it)
   user.password_hash = newPassword;
+  user.is_email_verified = true;
   user.reset_password_otp = null;
   user.reset_password_otp_expires_at = null;
   await user.save();
@@ -322,6 +343,99 @@ export const resetPasswordService = async ({ email, otp, newPassword }) => {
   };
 };
 
+/**
+ * Verify email address with 6-digit OTP code
+ * @param {object} params
+ * @param {string} params.email
+ * @param {string} params.otp
+ * @returns {Promise<{ user: object, accessToken: string, refreshToken: string, message: string }>}
+ */
+export const verifyEmailService = async ({ email, otp }) => {
+  const normalizedEmail = email.toLowerCase().trim();
+  const user = await User.findOne({ where: { email: normalizedEmail } });
+
+  if (!user) {
+    throw new ApiError(404, 'User with this email does not exist');
+  }
+
+  if (user.is_email_verified) {
+    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user.id);
+    return {
+      user: user.toJSON(),
+      accessToken,
+      refreshToken,
+      message: 'Email is already verified.',
+    };
+  }
+
+  if (!user.verification_otp || !user.verification_otp_expires_at) {
+    throw new ApiError(
+      400,
+      'No active verification request found. Please request a new verification code.'
+    );
+  }
+
+  if (new Date() > new Date(user.verification_otp_expires_at)) {
+    user.verification_otp = null;
+    user.verification_otp_expires_at = null;
+    await user.save();
+    throw new ApiError(400, 'Verification code has expired. Please request a new one.');
+  }
+
+  if (user.verification_otp !== otp.trim()) {
+    throw new ApiError(400, 'Invalid verification code provided.');
+  }
+
+  user.is_email_verified = true;
+  user.verification_otp = null;
+  user.verification_otp_expires_at = null;
+  await user.save();
+
+  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user.id);
+
+  return {
+    user: user.toJSON(),
+    accessToken,
+    refreshToken,
+    message: 'Email verified successfully. Welcome to Halalify!',
+  };
+};
+
+/**
+ * Resend email verification OTP
+ * @param {string} email
+ * @returns {Promise<{ message: string }>}
+ */
+export const resendVerificationOtpService = async (email) => {
+  const normalizedEmail = email.toLowerCase().trim();
+  const user = await User.findOne({ where: { email: normalizedEmail } });
+
+  if (!user) {
+    throw new ApiError(404, 'User with this email does not exist');
+  }
+
+  if (user.is_email_verified) {
+    throw new ApiError(400, 'Email address is already verified.');
+  }
+
+  // Generate 6-digit numeric OTP valid for 15 minutes
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+  user.verification_otp = otp;
+  user.verification_otp_expires_at = expiresAt;
+  await user.save();
+
+  console.log(`[VERIFICATION OTP RESENT] For ${normalizedEmail}: ${otp} (valid for 15m)`);
+
+  // Dispatch email via Nodemailer
+  await sendVerificationEmail(normalizedEmail, otp, user.name || 'User');
+
+  return {
+    message: 'Verification code has been resent to your email address.',
+  };
+};
+
 export default {
   generateAccessAndRefreshTokens,
   registerUserService,
@@ -333,5 +447,8 @@ export default {
   getUserProfileService,
   forgotPasswordService,
   resetPasswordService,
+  verifyEmailService,
+  resendVerificationOtpService,
 };
+
 

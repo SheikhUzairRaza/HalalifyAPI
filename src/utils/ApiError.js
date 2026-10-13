@@ -3,6 +3,7 @@ export class ApiError extends Error {
     statusCode = 500,
     message = 'Something went wrong',
     errors = [],
+    code = null,
     stack = ''
   ) {
     super(message);
@@ -10,7 +11,14 @@ export class ApiError extends Error {
     this.data = null;
     this.message = message;
     this.success = false;
-    this.errors = errors;
+
+    if (typeof errors === 'string') {
+      this.code = errors;
+      this.errors = [];
+    } else {
+      this.errors = errors;
+      this.code = code;
+    }
 
     if (stack) {
       this.stack = stack;
