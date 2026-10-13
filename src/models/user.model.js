@@ -60,6 +60,8 @@ export class User extends Model {
     delete values.refresh_token;
     delete values.reset_password_otp;
     delete values.reset_password_otp_expires_at;
+    delete values.verification_otp;
+    delete values.verification_otp_expires_at;
     return values;
   }
 }
@@ -133,6 +135,19 @@ User.init(
       allowNull: true,
     },
     reset_password_otp_expires_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    is_email_verified: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
+    verification_otp: {
+      type: DataTypes.STRING(6),
+      allowNull: true,
+    },
+    verification_otp_expires_at: {
       type: DataTypes.DATE,
       allowNull: true,
     },
