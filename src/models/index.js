@@ -4,6 +4,7 @@ import UserToken from './userToken.model.js';
 import Stock from './stock.model.js';
 import MarketData from './marketData.model.js';
 import Feature from './feature.model.js';
+import ComplianceCheck from './complianceCheck.model.js';
 
 // Setup associations
 User.hasMany(UserToken, { foreignKey: 'user_id', as: 'tokens' });
@@ -33,6 +34,18 @@ Feature.belongsTo(Stock, {
   as: 'stock',
 });
 
+// Stock <-> ComplianceCheck Association (1-to-Many)
+Stock.hasMany(ComplianceCheck, {
+  foreignKey: 'stock_id',
+  as: 'complianceChecks',
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+});
+ComplianceCheck.belongsTo(Stock, {
+  foreignKey: 'stock_id',
+  as: 'stock',
+});
+
 const db = {
   sequelize,
   User,
@@ -40,7 +53,8 @@ const db = {
   Stock,
   MarketData,
   Feature,
+  ComplianceCheck,
 };
 
-export { sequelize, User, UserToken, Stock, MarketData, Feature };
+export { sequelize, User, UserToken, Stock, MarketData, Feature, ComplianceCheck };
 export default db;
