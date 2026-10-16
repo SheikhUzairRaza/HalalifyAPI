@@ -1,6 +1,7 @@
 import { asyncHandler, ApiResponse } from '../utils/index.js';
 import { refreshMarketData } from '../services/marketData.service.js';
 import { refreshFundamentals } from '../services/fundamentals.service.js';
+import { runComplianceCheck } from '../services/compliance.service.js';
 
 /**
  * @desc    Manually trigger market data refresh for active stocks
@@ -41,7 +42,29 @@ export const refreshStocksFeatures = asyncHandler(async (req, res) => {
   ).send(res);
 });
 
+/**
+ * @desc    Run Shariah compliance check for all active stocks across standard & strict modes
+ * @route   POST /api/v1/admin/compliance/run
+ * @access  Private (Admin / Authenticated)
+ */
+export const runCompliance = asyncHandler(async (req, res) => {
+  const result = await runComplianceCheck();
+
+  return new ApiResponse(
+    200,
+    {
+      evaluated: result.evaluated,
+      compliant: result.compliant,
+      non_compliant: result.non_compliant,
+      insufficient_data: result.insufficient_data,
+      by_mode: result.by_mode,
+    },
+    `Compliance check completed: ${result.evaluated} evaluations (${result.compliant} compliant, ${result.non_compliant} non-compliant, ${result.insufficient_data} insufficient data)`
+  ).send(res);
+});
+
 export default {
   refreshStocksMarketData,
   refreshStocksFeatures,
+  runCompliance,
 };

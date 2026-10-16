@@ -5,3 +5,4 @@ export * from './stock.service.js';
 export * from './marketData.service.js';
 export * from './fundamentals.service.js';
 export * from './mail.service.js';
+export * from './compliance.service.js';
