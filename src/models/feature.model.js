@@ -29,6 +29,10 @@ Feature.init(
       type: DataTypes.DECIMAL(10, 4),
       allowNull: true,
     },
+    debt_to_assets: {
+      type: DataTypes.DECIMAL(8, 4),
+      allowNull: true,
+    },
     pe_ratio: {
       type: DataTypes.DECIMAL(10, 4),
       allowNull: true,

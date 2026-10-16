@@ -156,7 +156,7 @@ export const getStockByIdService = async (id) => {
   const latestFeatureRow = await Feature.findOne({
     where: { stock_id: stock.id },
     order: [['date', 'DESC']],
-    attributes: ['debt_ratio', 'pe_ratio', 'market_cap'],
+    attributes: ['debt_ratio', 'debt_to_assets', 'pe_ratio', 'market_cap'],
   });
 
   return {
@@ -176,6 +176,7 @@ export const getStockByIdService = async (id) => {
     fundamentals: latestFeatureRow
       ? {
           debt_ratio: latestFeatureRow.debt_ratio,
+          debt_to_assets: latestFeatureRow.debt_to_assets,
           pe_ratio: latestFeatureRow.pe_ratio,
           market_cap: latestFeatureRow.market_cap,
         }
@@ -246,7 +247,7 @@ export const getStockFeaturesHistoryService = async (id, { full = false }) => {
   }
 
   const isFull = full === true || full === 'true' || full === 1 || full === '1';
-  const attributes = ['id', 'date', 'debt_ratio', 'pe_ratio', 'market_cap'];
+  const attributes = ['id', 'date', 'debt_ratio', 'debt_to_assets', 'pe_ratio', 'market_cap'];
 
   if (isFull) {
     attributes.push('technical_indicators');

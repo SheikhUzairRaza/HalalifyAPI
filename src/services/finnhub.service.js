@@ -42,9 +42,9 @@ export const getFinnhubSector = async (ticker) => {
 };
 
 /**
- * Fetch fundamental financial metrics from Finnhub API
+ * Fetch fundamental financial metrics and series from Finnhub API
  * @param {string} ticker - Stock symbol (e.g. 'AAPL')
- * @returns {Promise<object|null>} - Captured metric property from Finnhub response
+ * @returns {Promise<{ metric: object|null, series: object|null }|null>}
  */
 export const getFinnhubMetrics = async (ticker) => {
   const apiKey = env.finnhub.apiKey;
@@ -60,7 +60,7 @@ export const getFinnhubMetrics = async (ticker) => {
     const response = await axios.get(url, {
       params: {
         symbol: ticker,
-        metric: 'all'
+        metric: 'all',
       },
       headers: {
         'X-Finnhub-Token': apiKey,
@@ -68,7 +68,14 @@ export const getFinnhubMetrics = async (ticker) => {
       },
     });
 
-    return response.data?.metric || null;
+    if (!response.data || !response.data.metric) {
+      return null;
+    }
+
+    return {
+      metric: response.data.metric,
+      series: response.data.series || null,
+    };
   } catch (error) {
     console.warn(`Failed to fetch Finnhub metrics for '${ticker}': ${error.message}`);
     return null;
