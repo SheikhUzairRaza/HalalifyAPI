@@ -49,6 +49,12 @@ export const getStocksQuerySchema = z.object({
   search: z.string().trim().max(100, 'Search term cannot exceed 100 characters').optional(),
   sector: z.string().trim().max(100, 'Sector cannot exceed 100 characters').optional(),
   exchange: z.string().trim().max(50, 'Exchange cannot exceed 50 characters').optional(),
+  mode: z
+    .enum(['standard', 'strict'], {
+      invalid_type_error: 'mode must be either standard or strict',
+    })
+    .optional()
+    .default('standard'),
   is_active: z
     .preprocess((val) => {
       if (val === 'true' || val === true || val === 1 || val === '1') return true;
@@ -62,6 +68,18 @@ export const getStocksQuerySchema = z.object({
   limit: z
     .preprocess((val) => (val ? Number(val) : 20), z.number().int().min(1).max(100, 'Limit cannot exceed 100').default(20))
     .optional(),
+});
+
+/**
+ * Validation schema for Shariah compliance mode query parameter (?mode=standard|strict)
+ */
+export const complianceModeQuerySchema = z.object({
+  mode: z
+    .enum(['standard', 'strict'], {
+      invalid_type_error: 'mode must be either standard or strict',
+    })
+    .optional()
+    .default('standard'),
 });
 
 /**
@@ -118,6 +136,7 @@ export default {
   stockTickerParamSchema,
   stockIdParamSchema,
   getStocksQuerySchema,
+  complianceModeQuerySchema,
   getMarketDataQuerySchema,
   getFeaturesQuerySchema,
   updateStockSchema,

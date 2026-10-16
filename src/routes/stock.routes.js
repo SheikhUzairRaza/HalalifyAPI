@@ -5,11 +5,13 @@ import {
   getStockById,
   getStockMarketDataHistory,
   getStockFeaturesHistory,
+  getStockCompliance,
 } from '../controllers/stock.controller.js';
 import { validate } from '../middlewares/validate.middleware.js';
 import {
   createStockSchema,
   getStocksQuerySchema,
+  complianceModeQuerySchema,
   stockIdParamSchema,
   getMarketDataQuerySchema,
   getFeaturesQuerySchema,
@@ -126,6 +128,13 @@ router.get('/', validate(getStocksQuerySchema, 'query'), getStocks);
  *           type: string
  *           format: uuid
  *         description: Stock UUID
+ *       - in: query
+ *         name: mode
+ *         schema:
+ *           type: string
+ *           enum: [standard, strict]
+ *           default: standard
+ *         description: Shariah screening strictness mode (standard or strict)
  *     responses:
  *       200:
  *         description: Stock details retrieved successfully
@@ -134,7 +143,11 @@ router.get('/', validate(getStocksQuerySchema, 'query'), getStocks);
  *       400:
  *         description: Invalid UUID format
  */
-router.get('/:id', validate(stockIdParamSchema, 'params'), getStockById);
+router.get(
+  '/:id',
+  validate({ params: stockIdParamSchema, query: complianceModeQuerySchema }),
+  getStockById
+);
 
 /**
  * @openapi
@@ -221,6 +234,43 @@ router.get(
   '/:id/features',
   validate({ params: stockIdParamSchema, query: getFeaturesQuerySchema }),
   getStockFeaturesHistory
+);
+
+/**
+ * @openapi
+ * /api/v1/stocks/{id}/compliance:
+ *   get:
+ *     summary: Get Shariah compliance check details for a stock
+ *     description: Returns is_compliant, sector_pass, debt_pass, reason, debt_to_assets_used, sector_used, and checked_at for the requested strictness mode (default standard). Returns compliance null if never evaluated.
+ *     tags:
+ *       - Stocks
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Stock UUID
+ *       - in: query
+ *         name: mode
+ *         schema:
+ *           type: string
+ *           enum: [standard, strict]
+ *           default: standard
+ *         description: Screening strictness mode (standard or strict)
+ *     responses:
+ *       200:
+ *         description: Stock compliance details retrieved successfully
+ *       404:
+ *         description: Stock not found
+ *       400:
+ *         description: Validation error
+ */
+router.get(
+  '/:id/compliance',
+  validate({ params: stockIdParamSchema, query: complianceModeQuerySchema }),
+  getStockCompliance
 );
 
 export default router;

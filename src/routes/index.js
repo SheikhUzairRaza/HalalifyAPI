@@ -3,6 +3,7 @@ import { asyncHandler, ApiResponse } from '../utils/index.js';
 import authRoutes from './auth.routes.js';
 import stockRoutes from './stock.routes.js';
 import adminRoutes from './admin.routes.js';
+import complianceRoutes from './compliance.routes.js';
 
 const router = Router();
 
@@ -32,7 +33,7 @@ const router = Router();
 router.get(
   '/health',
   asyncHandler(async (req, res) => {
-    return new ApiResponse(200, { status: 'OK' }, 'Halalfy API is running').send(res);
+    return new ApiResponse(200, { status: 'OK' }, 'Halalify API is running').send(res);
   })
 );
 
@@ -40,5 +41,6 @@ router.get(
 router.use('/auth', authRoutes);
 router.use('/stocks', stockRoutes);
 router.use('/admin', adminRoutes);
+router.use('/compliance', complianceRoutes);
 
 export default router;

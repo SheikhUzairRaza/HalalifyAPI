@@ -1,5 +1,5 @@
 import { Op } from 'sequelize';
-import { Stock, MarketData, Feature } from '../models/index.js';
+import { Stock, MarketData, Feature, ComplianceCheck } from '../models/index.js';
 import { getAlpacaAsset } from './alpaca.service.js';
 import { getFinnhubSector } from './finnhub.service.js';
 import { ApiError } from '../utils/index.js';
@@ -52,11 +52,19 @@ export const addStockService = async (ticker) => {
 
 /**
  * 1. GET /api/v1/stocks
- * Query: ?search=&sector=&page=1&limit=20
- * Return each stock with its latest price (newest market_data row).
+ * Query: ?search=&sector=&exchange=&mode=standard&page=1&limit=20
+ * Return each stock with its latest price (newest market_data row) and compliance badge { is_compliant, reason }.
  * Read only from own DB.
  */
-export const getStocksService = async ({ search, sector, exchange, is_active, page = 1, limit = 20 }) => {
+export const getStocksService = async ({
+  search,
+  sector,
+  exchange,
+  mode = 'standard',
+  is_active,
+  page = 1,
+  limit = 20,
+}) => {
   const where = {};
 
   if (is_active !== undefined) {
@@ -82,6 +90,8 @@ export const getStocksService = async ({ search, sector, exchange, is_active, pa
   const pageNum = parseInt(page, 10) || 1;
   const limitNum = parseInt(limit, 10) || 20;
   const offset = (pageNum - 1) * limitNum;
+  const strictnessMode =
+    String(mode || 'standard').trim().toLowerCase() === 'strict' ? 'strict' : 'standard';
 
   const { count, rows } = await Stock.findAndCountAll({
     where,
@@ -91,14 +101,20 @@ export const getStocksService = async ({ search, sector, exchange, is_active, pa
     attributes: ['id', 'ticker', 'name', 'sector', 'exchange', 'is_active', 'created_at'],
   });
 
-  // Attach latest price (newest market_data row) for each stock
+  // Attach latest price and compliance { is_compliant, reason } for each stock
   const stocksWithLatestPrice = await Promise.all(
     rows.map(async (stock) => {
-      const latestPriceRow = await MarketData.findOne({
-        where: { stock_id: stock.id },
-        order: [['date', 'DESC']],
-        attributes: ['close', 'date'],
-      });
+      const [latestPriceRow, complianceRow] = await Promise.all([
+        MarketData.findOne({
+          where: { stock_id: stock.id },
+          order: [['date', 'DESC']],
+          attributes: ['close', 'date'],
+        }),
+        ComplianceCheck.findOne({
+          where: { stock_id: stock.id, strictness_mode: strictnessMode },
+          attributes: ['is_compliant', 'reason'],
+        }),
+      ]);
 
       return {
         id: stock.id,
@@ -112,6 +128,12 @@ export const getStocksService = async ({ search, sector, exchange, is_active, pa
           ? {
               close: latestPriceRow.close,
               date: latestPriceRow.date,
+            }
+          : null,
+        compliance: complianceRow
+          ? {
+              is_compliant: complianceRow.is_compliant,
+              reason: complianceRow.reason,
             }
           : null,
       };
@@ -130,13 +152,14 @@ export const getStocksService = async ({ search, sector, exchange, is_active, pa
 };
 
 /**
- * 2. GET /api/v1/stocks/:id
+ * 2. GET /api/v1/stocks/:id?mode=standard
  * One response with: ticker, name, sector, exchange,
  * latest_price {close, date} from newest market_data row,
- * fundamentals {debt_ratio, pe_ratio, market_cap} from newest features row.
- * Wrong id returns 404. If no price or features yet, returns null for that part.
+ * fundamentals {debt_ratio, debt_to_assets, pe_ratio, market_cap} from newest features row,
+ * compliance {is_compliant, reason} from compliance_checks row for requested mode.
+ * Wrong id returns 404. If no price, features, or compliance yet, returns null for that part.
  */
-export const getStockByIdService = async (id) => {
+export const getStockByIdService = async (id, mode = 'standard') => {
   const stock = await Stock.findByPk(id, {
     attributes: ['id', 'ticker', 'name', 'sector', 'exchange', 'is_active', 'created_at'],
   });
@@ -145,19 +168,26 @@ export const getStockByIdService = async (id) => {
     throw new ApiError(404, `Stock not found with ID: ${id}`);
   }
 
-  // Fetch newest market_data row
-  const latestPriceRow = await MarketData.findOne({
-    where: { stock_id: stock.id },
-    order: [['date', 'DESC']],
-    attributes: ['close', 'date'],
-  });
+  const strictnessMode =
+    String(mode || 'standard').trim().toLowerCase() === 'strict' ? 'strict' : 'standard';
 
-  // Fetch newest features row
-  const latestFeatureRow = await Feature.findOne({
-    where: { stock_id: stock.id },
-    order: [['date', 'DESC']],
-    attributes: ['debt_ratio', 'debt_to_assets', 'pe_ratio', 'market_cap'],
-  });
+  // Fetch newest market_data row, newest features row, and compliance check row in parallel
+  const [latestPriceRow, latestFeatureRow, complianceRow] = await Promise.all([
+    MarketData.findOne({
+      where: { stock_id: stock.id },
+      order: [['date', 'DESC']],
+      attributes: ['close', 'date'],
+    }),
+    Feature.findOne({
+      where: { stock_id: stock.id },
+      order: [['date', 'DESC']],
+      attributes: ['debt_ratio', 'debt_to_assets', 'pe_ratio', 'market_cap'],
+    }),
+    ComplianceCheck.findOne({
+      where: { stock_id: stock.id, strictness_mode: strictnessMode },
+      attributes: ['is_compliant', 'reason'],
+    }),
+  ]);
 
   return {
     id: stock.id,
@@ -179,6 +209,12 @@ export const getStockByIdService = async (id) => {
           debt_to_assets: latestFeatureRow.debt_to_assets,
           pe_ratio: latestFeatureRow.pe_ratio,
           market_cap: latestFeatureRow.market_cap,
+        }
+      : null,
+    compliance: complianceRow
+      ? {
+          is_compliant: complianceRow.is_compliant,
+          reason: complianceRow.reason,
         }
       : null,
   };

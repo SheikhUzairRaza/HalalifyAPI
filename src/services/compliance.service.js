@@ -1,4 +1,5 @@
-import { Stock, Feature, ComplianceCheck } from '../models/index.js';
+import { sequelize, Stock, Feature, ComplianceCheck } from '../models/index.js';
+import { ApiError } from '../utils/index.js';
 import {
   DEBT_LIMIT,
   PROHIBITED_SECTORS,
@@ -187,7 +188,145 @@ export const runComplianceCheck = async () => {
   };
 };
 
+/**
+ * Step 11: GET /api/v1/stocks/:id/compliance?mode=standard
+ * Returns compliance check row for stock in requested mode (default 'standard').
+ * Wrong id -> 404. Never evaluated -> compliance: null (not 500).
+ * @param {string} id - Stock UUID
+ * @param {string} [mode='standard'] - 'standard' or 'strict'
+ */
+export const getStockComplianceService = async (id, mode = 'standard') => {
+  const stock = await Stock.findByPk(id, {
+    attributes: ['id', 'ticker', 'name', 'sector'],
+  });
+
+  if (!stock) {
+    throw new ApiError(404, `Stock not found with ID: ${id}`);
+  }
+
+  const strictnessMode =
+    String(mode || 'standard').trim().toLowerCase() === 'strict' ? 'strict' : 'standard';
+
+  const checkRow = await ComplianceCheck.findOne({
+    where: {
+      stock_id: stock.id,
+      strictness_mode: strictnessMode,
+    },
+    attributes: [
+      'is_compliant',
+      'sector_pass',
+      'debt_pass',
+      'reason',
+      'debt_to_assets_used',
+      'sector_used',
+      'checked_at',
+    ],
+  });
+
+  return {
+    stock_id: stock.id,
+    ticker: stock.ticker,
+    name: stock.name,
+    strictness_mode: strictnessMode,
+    compliance: checkRow
+      ? {
+          is_compliant: checkRow.is_compliant,
+          sector_pass: checkRow.sector_pass,
+          debt_pass: checkRow.debt_pass,
+          reason: checkRow.reason,
+          debt_to_assets_used: checkRow.debt_to_assets_used,
+          sector_used: checkRow.sector_used,
+          checked_at: checkRow.checked_at,
+        }
+      : null,
+  };
+};
+
+/**
+ * Step 12: GET /api/v1/compliance/summary?mode=standard
+ * Uses SQL GROUP BY queries to aggregate compliance counts and non-compliant breakdown by reason.
+ * @param {string} [mode='standard'] - 'standard' or 'strict'
+ */
+export const getComplianceSummaryService = async (mode = 'standard') => {
+  const strictnessMode =
+    String(mode || 'standard').trim().toLowerCase() === 'strict' ? 'strict' : 'standard';
+
+  // 1. GROUP BY status to compute total, compliant, non_compliant, and insufficient_data
+  const [statusRows] = await sequelize.query(
+    `
+    SELECT
+      CASE
+        WHEN reason = 'Insufficient data' THEN 'insufficient_data'
+        WHEN is_compliant = 1 THEN 'compliant'
+        ELSE 'non_compliant'
+      END AS status_bucket,
+      COUNT(*) AS count
+    FROM compliance_checks
+    WHERE strictness_mode = :mode
+    GROUP BY status_bucket
+    `,
+    { replacements: { mode: strictnessMode } }
+  );
+
+  let compliant = 0;
+  let nonCompliantOnly = 0;
+  let insufficientData = 0;
+
+  for (const row of statusRows) {
+    const cnt = Number(row.count) || 0;
+    if (row.status_bucket === 'compliant') compliant += cnt;
+    else if (row.status_bucket === 'insufficient_data') insufficientData += cnt;
+    else nonCompliantOnly += cnt;
+  }
+
+  const total = compliant + nonCompliantOnly + insufficientData;
+  const non_compliant = nonCompliantOnly;
+
+  // 2. GROUP BY failure category for non-compliant stocks
+  const [reasonRows] = await sequelize.query(
+    `
+    SELECT
+      CASE
+        WHEN reason = 'Insufficient data' THEN 'Insufficient data'
+        WHEN sector_pass = 0 AND debt_pass = 0 THEN 'Both sector and debt ratio failed'
+        WHEN sector_pass = 0 THEN 'Sector not permitted'
+        WHEN debt_pass = 0 THEN 'Debt ratio exceeded'
+        ELSE reason
+      END AS reason,
+      COUNT(*) AS count
+    FROM compliance_checks
+    WHERE strictness_mode = :mode AND is_compliant = 0
+    GROUP BY
+      CASE
+        WHEN reason = 'Insufficient data' THEN 'Insufficient data'
+        WHEN sector_pass = 0 AND debt_pass = 0 THEN 'Both sector and debt ratio failed'
+        WHEN sector_pass = 0 THEN 'Sector not permitted'
+        WHEN debt_pass = 0 THEN 'Debt ratio exceeded'
+        ELSE reason
+      END
+    ORDER BY count DESC
+    `,
+    { replacements: { mode: strictnessMode } }
+  );
+
+  const by_reason = reasonRows.map((r) => ({
+    reason: r.reason,
+    count: Number(r.count) || 0,
+  }));
+
+  return {
+    mode: strictnessMode,
+    total,
+    compliant,
+    non_compliant,
+    insufficient_data: insufficientData,
+    by_reason,
+  };
+};
+
 export default {
   evaluateStock,
   runComplianceCheck,
+  getStockComplianceService,
+  getComplianceSummaryService,
 };
