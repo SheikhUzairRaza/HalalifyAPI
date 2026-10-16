@@ -10,6 +10,7 @@
     "migrate": "node --env-file=.env src/migrations/runner.js",
     "seed": "node --env-file=.env src/seeders/runner.js",
     "seed:stocks": "node --env-file=.env scripts/seedStocks.js",
+    "backfill:history": "node --env-file=.env scripts/backfillHistory.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
