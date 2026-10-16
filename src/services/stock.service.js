@@ -56,7 +56,7 @@ export const addStockService = async (ticker) => {
  * Return each stock with its latest price (newest market_data row).
  * Read only from own DB.
  */
-export const getStocksService = async ({ search, sector, is_active, page = 1, limit = 20 }) => {
+export const getStocksService = async ({ search, sector, exchange, is_active, page = 1, limit = 20 }) => {
   const where = {};
 
   if (is_active !== undefined) {
@@ -65,6 +65,10 @@ export const getStocksService = async ({ search, sector, is_active, page = 1, li
 
   if (sector) {
     where.sector = { [Op.like]: `%${sector.trim()}%` };
+  }
+
+  if (exchange) {
+    where.exchange = { [Op.like]: `%${exchange.trim().toUpperCase()}%` };
   }
 
   if (search) {
@@ -180,11 +184,11 @@ export const getStockByIdService = async (id) => {
 };
 
 /**
- * 3. GET /api/v1/stocks/:id/market-data?from=&to=
- * Rows in date range, ascending. Default to last 90 days if no range given.
+ * 3. GET /api/v1/stocks/:id/market-data?from=&to=&sort=
+ * Rows in date range, sorted by date (default ascending). Default to last 90 days if no range given.
  * Wrong id returns 404.
  */
-export const getStockMarketDataHistoryService = async (id, { from, to }) => {
+export const getStockMarketDataHistoryService = async (id, { from, to, sort = 'asc' }) => {
   const stock = await Stock.findByPk(id, {
     attributes: ['id', 'ticker'],
   });
@@ -200,6 +204,7 @@ export const getStockMarketDataHistoryService = async (id, { from, to }) => {
 
   const startDate = from || defaultFrom;
   const endDate = to || defaultTo;
+  const sortDirection = String(sort).toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
 
   const rows = await MarketData.findAll({
     where: {
@@ -208,7 +213,7 @@ export const getStockMarketDataHistoryService = async (id, { from, to }) => {
         [Op.between]: [startDate, endDate],
       },
     },
-    order: [['date', 'ASC']],
+    order: [['date', sortDirection]],
     attributes: ['id', 'date', 'open', 'high', 'low', 'close', 'volume'],
   });
 
@@ -219,6 +224,7 @@ export const getStockMarketDataHistoryService = async (id, { from, to }) => {
       from: startDate,
       to: endDate,
     },
+    sort: sortDirection.toLowerCase(),
     count: rows.length,
     data: rows,
   };

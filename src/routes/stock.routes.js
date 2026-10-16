@@ -70,6 +70,12 @@ router.post('/', validate(createStockSchema), addStock);
  *           type: string
  *         description: Filter by sector name
  *       - in: query
+ *         name: exchange
+ *         schema:
+ *           type: string
+ *           example: NASDAQ
+ *         description: Filter by exchange name (e.g. NASDAQ, NYSE)
+ *       - in: query
  *         name: page
  *         schema:
  *           type: integer
@@ -160,6 +166,13 @@ router.get('/:id', validate(stockIdParamSchema, 'params'), getStockById);
  *           format: date
  *           example: "2026-09-01"
  *         description: End date (YYYY-MM-DD)
+ *       - in: query
+ *         name: sort
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *           default: asc
+ *         description: Sort direction by date (asc or desc)
  *     responses:
  *       200:
  *         description: Historical market data retrieved successfully

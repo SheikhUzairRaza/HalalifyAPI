@@ -48,6 +48,7 @@ export const stockIdParamSchema = z.object({
 export const getStocksQuerySchema = z.object({
   search: z.string().trim().max(100, 'Search term cannot exceed 100 characters').optional(),
   sector: z.string().trim().max(100, 'Sector cannot exceed 100 characters').optional(),
+  exchange: z.string().trim().max(50, 'Exchange cannot exceed 50 characters').optional(),
   is_active: z
     .preprocess((val) => {
       if (val === 'true' || val === true || val === 1 || val === '1') return true;
@@ -64,20 +65,31 @@ export const getStocksQuerySchema = z.object({
 });
 
 /**
- * Validation schema for market data history query parameters (?from=&to=)
+ * Validation schema for market data history query parameters (?from=&to=&sort=)
  */
-export const getMarketDataQuerySchema = z.object({
-  from: z
-    .string()
-    .trim()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, 'from date must be in YYYY-MM-DD format')
-    .optional(),
-  to: z
-    .string()
-    .trim()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, 'to date must be in YYYY-MM-DD format')
-    .optional(),
-});
+export const getMarketDataQuerySchema = z
+  .object({
+    from: z
+      .string()
+      .trim()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, 'from date must be in YYYY-MM-DD format')
+      .optional(),
+    to: z
+      .string()
+      .trim()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, 'to date must be in YYYY-MM-DD format')
+      .optional(),
+    sort: z
+      .enum(['asc', 'desc'], {
+        invalid_type_error: 'sort must be either asc or desc',
+      })
+      .optional()
+      .default('asc'),
+  })
+  .refine((data) => !data.from || !data.to || data.from <= data.to, {
+    message: 'from date must be earlier than or equal to to date',
+    path: ['from'],
+  });
 
 /**
  * Validation schema for features history query parameters (?full=true)
